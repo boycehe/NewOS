@@ -78,6 +78,6 @@ LABEL_SEG_CODE32:
     ;到此停止
     jmp $
 	
-SegCode32Len equ  LABEL_DESC_CODE32 - LABEL_DESC_CODE32
+SegCode32Len	equ	$ - LABEL_SEG_CODE32
 ;end of [section .s32]
 
