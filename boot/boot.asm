@@ -72,12 +72,12 @@ LABEL_SEG_CODE32:
 
     mov edi,(80 * 11 + 79)*2;屏幕第11行，第79列。
     mov ah,0Ch  ;0000:黑底 1100：白字
-    mov al，'p'
+    mov al,'p'
     mov [gs:edi],eax
 
     ;到此停止
     jmp $
-
-SegCode32Len equ $ - LABEL_DESC_CODE32
+	
+SegCode32Len equ  LABEL_DESC_CODE32 - LABEL_DESC_CODE32
 ;end of [section .s32]
 
