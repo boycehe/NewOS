@@ -1,13 +1,13 @@
 %include "pm.inc"
 
-org 07cc00h
-jmp LABEL_BEGIN
+org 07c00h
+	jmp LABEL_BEGIN
 [SECTION .gdt]
 ;GDT
 ;段 基址，段界限，属性
 LABEL_GDT:  Descriptor  0,  0,  0 ;空描述符
 LABEL_DESC_CODE32: Descriptor   0,  SegCode32Len - 1,DA_C + DA_32;非一致代码
-LABEL_DESC_VIDEO: Descriptor    0B800h, 0ffffh, DA_DRW  ;显存首地址
+LABEL_DESC_VIDEO: Descriptor    0B8000h, 0ffffh, DA_DRW  ;显存首地址
 ;GDT结束
 GdtLen      equ     $ - LABEL_GDT  ;GDT长度
 GdtPtr      dw      GdtLen - 1     ;GDT界限
@@ -67,17 +67,19 @@ LABEL_BEGIN:
 [BITS 32]
 
 LABEL_SEG_CODE32:
-    mov ax,SelectorVideo
-    mov gs ,ax
+    mov	ax, SelectorVideo
+	mov	gs, ax			; 视频段选择子(目的)
 
-    mov edi,(80 * 11 + 79)*2;屏幕第11行，第79列。
-    mov ah,0Ch  ;0000:黑底 1100：白字
-    mov al,'p'
-    mov [gs:edi],eax
+    mov	edi, (80 * 11 + 79) * 2	; 屏幕第 11 行, 第 79 列。
+	mov	ah, 0Ch			; 0000: 黑底    1100: 红字
+    mov al,'P'
+    mov [gs:edi],ax
 
     ;到此停止
     jmp $
 	
 SegCode32Len	equ	$ - LABEL_SEG_CODE32
+times 510 - 149 db 0
+db 0x55,0xaa
 ;end of [section .s32]
 
