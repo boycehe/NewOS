@@ -1,22 +1,22 @@
-         ;ÎÄ¼şÃû£ºc13_app0.asm
-         ;ÎÄ¼şËµÃ÷£ºÓÃ»§³ÌĞò 
+         ;æ–‡ä»¶åï¼šc13_app0.asm
+         ;æ–‡ä»¶è¯´æ˜ï¼šç”¨æˆ·ç¨‹åº 
          
 ;===============================================================================
 SECTION header vstart=0
 
-         program_length   dd program_end          ;³ÌĞò×Ü³¤¶È#0x00
+         program_length   dd program_end          ;ç¨‹åºæ€»é•¿åº¦#0x00
          
-         head_len         dd header_end           ;³ÌĞòÍ·²¿µÄ³¤¶È#0x04
+         head_len         dd header_end           ;ç¨‹åºå¤´éƒ¨çš„é•¿åº¦#0x04
 
-         prgentry         dd start                ;³ÌĞòÈë¿Ú#0x08
-         code_seg         dd section.code.start   ;´úÂë¶ÎÎ»ÖÃ#0x0c
-         code_len         dd code_end             ;´úÂë¶Î³¤¶È#0x10
+         prgentry         dd start                ;ç¨‹åºå…¥å£#0x08
+         code_seg         dd section.code.start   ;ä»£ç æ®µä½ç½®#0x0c
+         code_len         dd code_end             ;ä»£ç æ®µé•¿åº¦#0x10
 
-         data_seg         dd section.data.start   ;Êı¾İ¶ÎÎ»ÖÃ#0x14
-         data_len         dd data_end             ;Êı¾İ¶Î³¤¶È#0x18
+         data_seg         dd section.data.start   ;æ•°æ®æ®µä½ç½®#0x14
+         data_len         dd data_end             ;æ•°æ®æ®µé•¿åº¦#0x18
 
-         stack_seg        dd section.stack.start  ;Õ»¶ÎÎ»ÖÃ#0x1c
-         stack_len        dd stack_end            ;Õ»¶Î³¤¶È#0x20
+         stack_seg        dd section.stack.start  ;æ ˆæ®µä½ç½®#0x1c
+         stack_len        dd stack_end            ;æ ˆæ®µé•¿åº¦#0x20
              
 header_end:
 
@@ -32,7 +32,7 @@ data_end:
 ;===============================================================================
 SECTION stack vstart=0
 
-        times 2048        db 0                    ;±£Áô2KBµÄÕ»¿Õ¼ä
+        times 2048        db 0                    ;ä¿ç•™2KBçš„æ ˆç©ºé—´
 
 stack_end:
 
@@ -52,9 +52,9 @@ start:
          ;mov eax,[data_seg]
          ;mov ds,eax
 
-         ;ÓÃ»§³ÌĞòÒª×öµÄÊÂÇé£¨Ê¡ÂÔ£©
+         ;ç”¨æˆ·ç¨‹åºè¦åšçš„äº‹æƒ…ï¼ˆçœç•¥ï¼‰
 
-         retf                                     ;½«¿ØÖÆÈ¨·µ»Øµ½ÏµÍ³
+         retf                                     ;å°†æ§åˆ¶æƒè¿”å›åˆ°ç³»ç»Ÿ
 
 code_end:
 
