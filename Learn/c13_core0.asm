@@ -324,6 +324,7 @@ SECTION core_data vstart=0                  ;系统核心的数据段
          cpu_brnd0        db 0x0d,0x0a,'  ',0
          cpu_brand  times 49 db 0
          cpu_brnd1        db 0x0d,0x0a,0x0d,0x0a,0
+ not_support_cpuid        db 'cup not support CPUID',0x0d,0x0a,0
 
 ;===============================================================================
 SECTION core_code vstart=0
@@ -433,7 +434,19 @@ start:
 
          mov ebx,message_1
          call sys_routine_seg_sel:put_string
-                                         
+         ;判断是否支持CPUID指令
+	  pushfd
+	  mov eax, dword [esp]
+         xor dword [esp], 0x200000    ;
+         popfd     ;判断ID位是否为1
+	  pushfd
+	  pop ebx
+	  cmp eax, ebx
+         jnz .showcpu
+         mov ebx,not_support_cpuid
+         call sys_routine_seg_sel:put_string
+         hlt                ;不支持则停机
+.showcpu:               
          ;显示处理器品牌信息 
          mov eax,0x80000002
          cpuid
