@@ -119,7 +119,11 @@ int64_t get_file_size_by_name(const char * const name) {
 	if (fgetpos(fp, &fpos_end)) return 0; /* error */
 	return fpos_end - fpos_begin;
 }
-
+/*
+-w 指定要写入的vhd
+-a 指定从哪个扇区写入
+-r 指定写入的文件
+*/
 int main(int argc, char **argv) {
 #define __err(s, ...) _err_msg(s, ##__VA_ARGS__);
 	writer_object wo;
