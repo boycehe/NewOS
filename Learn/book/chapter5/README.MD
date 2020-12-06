@@ -8,3 +8,5 @@ linux
 nasm -f elf helloworld.asm -o helloworld.o
 ld -s -m elf_i386 helloworld.o -o helloworld
 ```
+linux的中断
+https://blog.csdn.net/xiaominthere/article/details/17287965
