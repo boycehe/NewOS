@@ -1,7 +1,3 @@
-         mov ax,cs      
-         mov ss,ax
-         mov sp,0x7c00 ;设置栈
-      
          mov eax,[cs:pgdt+0x7c00+0x02] 
          xor edx,edx
          mov ebx,16
@@ -17,12 +13,9 @@
         ;创建保护模式下初始代码段描述符
          mov dword [ebx+0x10],0x7c0001ff     ;基地址为0x00007c00，界限0x1FF  
          mov dword [ebx+0x14],0x00409800    ;粒度为1个字节，代码段描述符   
-         ;建立保护模式下的堆栈段描述符      ;基地址为0x00007C00，界限0xFFFFE 
-         mov dword [ebx+0x18],0x7c00fffe    
-         mov dword [ebx+0x1c],0x00cf9600
          ;建立保护模式下的显示缓冲区描述符   
-         mov dword [ebx+0x20],0x80007fff    
-         mov dword [ebx+0x24],0x0040920b    
+         mov dword [ebx+0x18],0x80007fff    
+         mov dword [ebx+0x1c],0x0040920b    
          
          
          mov word [cs: pgdt+0x7c00],39     
@@ -43,7 +36,7 @@
                                            
          [bits 32]               
   flush:                                  
-         mov eax,0x0020                    
+         mov eax,0x0018                    
          mov es,eax
 
          mov eax,0x0008
@@ -55,7 +48,7 @@
 showBootMessage:
         mov al,[si]
         mov byte [es:ebx],al
-        mov byte [es:ebx+1],0x07
+        mov byte [es:ebx+1],0x17
         add ebx,2
         inc si
         loop showBootMessage
