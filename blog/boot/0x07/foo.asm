@@ -1,8 +1,9 @@
 ; 编译链接方法
+; linux
 ; nasm -f elf -g -F dwarf -o foo.o foo.asm
 ; gcc -m32 -c -g -o bar.o bar.c
 ; ld -m elf_i386 -o foobar foo.o bar.o
-;
+; macos
 ;
 ;
 ;
