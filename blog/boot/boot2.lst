@@ -1,0 +1,18 @@
+     1                                      ;org 07c00h	;告诉编译器程序会被加载到0x7c00h,这样就我们在使用，这样我们在mov ax,BootMessage　不用加上偏
+     2 00000000 8CC8                        mov ax,cs
+     3 00000002 8ED8                        mov ds,ax
+     4 00000004 8EC0                        mov es,ax
+     5 00000006 E80000                      call DispStr
+     6                                  DispStr:
+     7 00000009 B8[1C00]                    mov ax,BootMessage
+     8 0000000C 89C5                        mov bp,ax
+     9 0000000E B91000                      mov cx,16
+    10 00000011 B80113                      mov ax,01301h
+    11 00000014 BB0C00                      mov bx,000ch
+    12 00000017 B200                        mov dl,0
+    13 00000019 CD10                        int 10h
+    14 0000001B C3                          ret
+    15 0000001C 48656C6C6F2C204F53-     BootMessage: db "Hello, OS World!"
+    15 00000025 20576F726C6421     
+    16 0000002C 00<rept>                times 510-($-$$) db 0
+    17 000001FE 55AA                    dw 0xaa55
