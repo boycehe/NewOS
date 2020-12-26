@@ -12,14 +12,16 @@ extern choose	; int choose(int a, int b);
 
 [section .data]	; 数据在此
 
-num1st		dd	9
-num2nd		dd	4
+num1st		dd	3
+num2nd		dd	9
 message db '0123456789'
+line db 10
 
 [section .text]	; 代码在此
 
 global _start	; 我们必须导出 _start 这个入口，以便让链接器识别。
 global myprint	; 导出这个函数为了让 bar.c 使用
+global getRetNum
 
 
 _start:
@@ -47,17 +49,21 @@ showNumber:
 	xor edx,edx
 	or ecx,0
 	jnz showNumber
-	add edx,10
+	mov edx,line
 	mov ecx,edx
 	mov edx,1
 	mov ebx,1
 	mov eax,4
 	int 0x80
 
-	mov	ebx, 0
-	mov	eax, 1		; sys_exit
-	int	0x80		; 系统调用
 
+	mov	ebx,0
+	mov	eax,1		; sys_exit
+	int	0x80		; 系统调用
+getRetNum:
+	mov edx,0x07b6
+	mov eax,0x0d09ff62
+	ret 
 ; void myprint(char* msg, int len)
 myprint:
 	mov	edx, [esp + 8]	; len
