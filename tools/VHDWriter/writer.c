@@ -117,7 +117,8 @@ int64_t get_file_size_by_name(const char * const name) {
 	if (fgetpos(fp, &fpos_begin)) return 0; /* error */
 	fseek(fp, 0, SEEK_END);
 	if (fgetpos(fp, &fpos_end)) return 0; /* error */
-	return fpos_end - fpos_begin;
+
+	return fpos_end.__pos - fpos_begin.__pos;
 }
 /*
 -w 指定要写入的vhd

@@ -1,0 +1,19 @@
+###############################################################
+# Configuration file for Bochs
+###############################################################
+
+# how much memory the emulated machine will have
+megs: 32
+
+# filename of ROM images
+romimage: file="/usr/share/bochs/BIOS-bochs-latest"
+vgaromimage: file="/usr/share/bochs/VGABIOS-lgpl-latest"
+
+# choose the boot disk.
+boot: disk
+floppy_bootsig_check: disabled=0
+# what disk images will be used
+ata0: enabled=1, ioaddr1=0x1f0, ioaddr2=0x3f0, irq=14
+ata0-master: type=disk, path="/home/boyce/Project/NewOS/boot/boot.vhd", mode=flat, cylinders=120, heads=4, spt=17, model="Generic 1234", biosdetect=auto, translation=auto
+
+mouse: enabled=0

@@ -53,30 +53,8 @@ showBootMessage:
         inc si
         loop showBootMessage
         jmp $                                         
-;-------------------------------------------------------------------------------
-make_gdt_descriptor:                     ;构造描述符
-                                         ;输入：EAX=线性基地址
-                                         ;      EBX=段界限
-                                         ;      ECX=属性（各属性位都在原始
-                                         ;      位置，其它没用到的位置0） 
-                                         ;返回：EDX:EAX=完整的描述符
-         mov edx,eax
-         shl eax,16                     
-         or ax,bx                        ;描述符前32位(EAX)构造完毕
-      
-         and edx,0xffff0000              ;清除基地址中无关的位
-         rol edx,8
-         bswap edx                       ;装配基址的31~24和23~16  (80486+)
-      
-         xor bx,bx
-         or edx,ebx                      ;装配段界限的高4位
-      
-         or edx,ecx                      ;装配属性 
-      
-         ret
-;-------------------------------------------------------------------------------
-         pgdt             dw 0
-                          dd 0x00007e00      ;GDT的物理地址
+        pgdt            dw 0
+                        dd 0x00007e00      ;GDT的物理地址
 BootMessage: db "Hello, OS Protect Mode!"
 ;-------------------------------------------------------------------------------                             
 BootTail     times 510-($-$$) db 0
