@@ -69,9 +69,9 @@ realloc:
 
     jmp far [0x04]
 
-read_hard_disk_0:
-    push ax
-    push bx
+read_hard_disk_0: ;从硬盘读取一个逻辑扇区
+    push ax       ;输入 DI:SI=起始逻辑扇区号
+    push bx       ;     DS:BX=目标缓冲区地址
     push cx
     push dx
 
