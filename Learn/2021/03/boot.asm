@@ -68,14 +68,30 @@ realloc:
     loop realloc
 
     jmp far [0x04]
-
+;读取硬盘为两种模式
+;1. chs
+;2. lba
+;使用28byte表示逻辑扇区号
+;端口号为 0x1f3~0x1f6
+;从低位与端口号对应
+;0x1f2 端口号 决定读多少扇区数 1~255 如果是0代表读256个扇区
+;扇区号 = 0000   0000 0000   0000 0000 0000 0000
+;       |0x1f6| | 0x1f5 |   | 0x1f4 | | 0x1f3  |
+;其中0x1f6位8位端口 低四位用来表示lba 27~24
+;高四位的 第4位0表示主硬盘，1表示从硬盘
+;第5，7位固定为1
+;第6位 0表示CHS模式，1表示LBA模式
+;0x1f7 为命令&状态端口 是一个8位的端口
+;0x20表示读
+;0x1f7的详细信息 https://blog.csdn.net/cosmoslife/article/details/9024659
+;0x1f0为数据端口
 read_hard_disk_0:
     push ax
     push bx
     push cx
     push dx
 
-    mov dx,0x1f2
+    mov dx,0x1f2 ;0x1f2端口号为决定读取扇区数的
     mov al,1
     out dx,al ;读取扇区数
 
@@ -106,7 +122,7 @@ read_hard_disk_0:
     cmp al,0x88
     jnz .waits
 
-    mov cx,256
+    mov cx,256 ;一个扇区256个字 512个字节
     mov dx,0x1f0
 
 .readw:
