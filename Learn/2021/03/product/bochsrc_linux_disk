@@ -12,9 +12,7 @@ vgaromimage: file="/usr/share/bochs/VGABIOS-lgpl-latest"
 # what disk images will be used
 # floppya: 1_44=a.img, status=inserted
 boot: disk
-ata0: enabled=true, ioaddr1=0x1f0, ioaddr2=0x3f0, irq=14
-ata0-master: type=disk, path="ProtectMode.vhd", mode=vpc, cylinders=602, heads=4, spt=17, model="Generic 1234", biosdetect=auto, translation=auto
-#ata0-master: type=disk, path="ProtectMode.vhd", mode=vpc, cylinders=602, heads=4, spt=17, sect_size=512, model="Generic 1234", biosdetect=auto, translation=auto
-
-# choose the boot disk.
-boot: floppy
+#ata0: enabled=true, ioaddr1=0x1f0, ioaddr2=0x3f0, irq=14
+#ata0-master: type=disk, path=ProtectMode.vhd, mode=vpc, cylinders=602, heads=4, spt=17, model="Generic 1234", biosdetect=auto, translation=auto
+ata0: enabled=1, ioaddr1=0x1f0, ioaddr2=0x3f0, irq=14
+ata0-master: type=disk, path="ProtectMode.vhd", mode=flat, cylinders=120, heads=4, spt=17, model="Generic 1234", biosdetect=auto, translation=auto
