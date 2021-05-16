@@ -68,6 +68,8 @@ realloc:
     loop realloc
 
     jmp far [0x04]
+
+
 ;读取硬盘为两种模式
 ;1. chs
 ;2. lba
@@ -85,9 +87,10 @@ realloc:
 ;0x20表示读
 ;0x1f7的详细信息 https://blog.csdn.net/cosmoslife/article/details/9024659
 ;0x1f0为数据端口
-read_hard_disk_0:
-    push ax
-    push bx
+
+read_hard_disk_0: ;从硬盘读取一个逻辑扇区
+    push ax       ;输入 DI:SI=起始逻辑扇区号
+    push bx       ;     DS:BX=目标缓冲区地址
     push cx
     push dx
 
