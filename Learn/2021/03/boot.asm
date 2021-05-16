@@ -102,34 +102,34 @@ read_hard_disk_0: ;从硬盘读取一个逻辑扇区
     mov ax,si
     out dx,al  ;LBA地址7~0
 
-    inc dx     ;0x1f4端口:
-    mov al,ah
+    inc dx      ;0x1f4端口:
+    mov al,ah   ;LBA地址 8~15
     out dx,al
 
-    inc dx
-    mov ax,di
+    inc dx      ;0x1f5端口
+    mov ax,di   ;LAB地址 16~23
     out dx,al
 
-    inc dx
-    mov al,0xe0
+    inc dx      ;0x1f6端口
+    mov al,0xe0 ;看上边注释
     or al,ah
     out dx,al
 
-    inc dx
+    inc dx      ;设置为读
     mov al,0x20
     out dx,al
 
 .waits:
-    in al,dx
+    in al,dx    ;获取disk状态，直到硬盘准备就绪
     and al,0x88
     cmp al,0x88
     jnz .waits
 
-    mov cx,256 ;一个扇区256个字 512个字节
+    mov cx,256 ;一个扇区256个字 512个字节,每次读两个字节，1个字
     mov dx,0x1f0
 
 .readw:
-    in ax,dx
+    in ax,dx  ;读完
     mov [bx],ax
     add bx,2
     loop  .readw
