@@ -7,7 +7,7 @@ SECTION mbr align=16 vstart=0x7c00
     mov ss,ax
     mov sp,ax
 
-    mov ax,[cs:phy_base]
+    mov ax,[cs:phy_base]  ;计算段地址
     mov dx,[cs:phy_base+0x02]
     mov bx,16
     div bx
@@ -79,11 +79,11 @@ read_hard_disk_0: ;从硬盘读取一个逻辑扇区
     mov al,1
     out dx,al ;读取扇区数
 
-    inc dx
+    inc dx    ;0x1f3端口
     mov ax,si
     out dx,al  ;LBA地址7~0
 
-    inc dx
+    inc dx     ;0x1f4端口:
     mov al,ah
     out dx,al
 
