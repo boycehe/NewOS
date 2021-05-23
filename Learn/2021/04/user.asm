@@ -13,6 +13,27 @@ header_end:
 
 SECTION code align=16 vstart=0
 start:
+    push ax
+    push bx
+    push cx
+    push dx
+    push es
+
+.w0:
+    mov al,0x0a       ;阻断NMI，当然这个通常是不必要的
+    or al,0x80
+    out 0x70,al
+    in al,0x71
+    test al,0x80
+    jnz .w0
+    
+    xor al,al
+    or al,0x80
+    out 0x70,al
+    in al,0x71
+    push ax
+
+    
     mov ax,[stack_segment]
     mov ss,ax
     mov sp,ss_pointer
