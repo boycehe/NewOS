@@ -3,9 +3,9 @@ section s1
 section s2 align=16 vstart=0x100 
     str1 db 'hello'
     str2 db 'world'
-section s3 align=16
+section s3 align=16 vstart=0x20
     num dw 0xbad
-times 510-($-$$) db 0
+times 510-($-offset) db 0
 dw 0xaa55
 ;s1,实际占用为 3*2 6个字节空间，但是默认16字节对齐 所以s1占用16个字节空间 
 ;s2,实际占用10个字节空间，也是因为要16个字节对齐，所以也是占用16个字节空间。因为是vstart=0x100所以s2段的偏移量
