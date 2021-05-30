@@ -6,4 +6,4 @@ dd if=product/boot.bin of=product/a.img bs=512 count=1 conv=notrunc
 wait
 cd product
 wait
-bochs -f bochsrc
+bochs -f bochsrc_mac

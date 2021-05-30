@@ -122,7 +122,7 @@ read_hard_disk_0: ;从硬盘读取一个逻辑扇区
 .waits:
     in al,dx    ;获取disk状态，直到硬盘准备就绪
     and al,0x88
-    cmp al,0x88
+    cmp al,0x08
     jnz .waits
 
     mov cx,256 ;一个扇区256个字 512个字节,每次读两个字节，1个字

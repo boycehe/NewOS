@@ -41,7 +41,7 @@ start:
 
 SECTION data align=16 vstart=8
 
-    message     db 'Hello, friend!',0x8d,0x0a
+    message     db 'Hello, boyce!',0x8d,0x0a
                 db 'This simple procedure used to demonstrate '
                 db 'the BIOS inteerrupt.',0x0d,0x0a
                 db 'Please press the keys on the keyboard ->'

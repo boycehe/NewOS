@@ -118,7 +118,12 @@ int64_t get_file_size_by_name(const char * const name) {
 	fseek(fp, 0, SEEK_END);
 	if (fgetpos(fp, &fpos_end)) return 0; /* error */
 
-	return fpos_end.__pos - fpos_begin.__pos;
+#ifdef __APPLE__
+    return fpos_end - fpos_begin;
+#else
+    return fpos_end.__pos - fpos_begin.__pos;
+#endif
+	
 }
 /*
 -w 指定要写入的vhd

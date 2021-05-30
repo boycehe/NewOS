@@ -1,161 +1,99 @@
-    app_lba_start equ 100   ;声明常数（用户程序起始逻辑扇区号）
-                            ;常数不占用汇编地址
-
-SECTION mbr align=16 vstart=0x7c00
-    ;设置堆栈段和栈指针
-    mov ax,0
-    mov ss,ax
-    mov sp,ax
-
-    mov ax,[cs:phy_base]  ;计算段地址
-    mov dx,[cs:phy_base+0x02]
-    mov bx,16
-    div bx
-    mov ds,ax
-    mov es,ax
-
-    ;以下读取程序起始部分
-    xor di,di
-    mov si,app_lba_start
-    xor bx,bx
-    call read_hard_disk_0
-
-    ;以下判断程序有多大
-    mov dx,[2]
-    mov ax,[0]
-    mov bx,512
-    div bx
-    cmp dx,0
-    jnz @1
-    dec ax
-
-@1:
-    cmp ax,0  ;考虑实际长度可能小于512字节为边界的段地址
-    jz direct
-
-    ;读取剩余扇区
-    push ds   ;下边要用到并改变ds寄存器
-    mov cx,ax ;循环次数
-
-@2:
-    mov ax,ds
-    add ax,0x20 ;得到下一个以512字节为边界的段地址
-    mov ds,ax
-
-    xor bx,bx   
-    inc si
-    call read_hard_disk_0
-    loop @2
-
-    pop ds
-
-;计算入库代码基址
-direct:
-    mov dx,[0x08]
-    mov ax,[0x06]
-    call calc_segment_base
-    mov [0x06],ax
-
-    mov cx,[0x0a]
-    mov bx,0x0c
-
-realloc:
-    mov dx,[bx+0x02]
-    mov ax,[bx]
-    call calc_segment_base
-    mov [bx],ax
-    add bx,4
-    loop realloc
-
-    jmp far [0x04]
+      ;保护模式下的引导扇区代码
 
 
-;读取硬盘为两种模式
-;1. chs
-;2. lba
-;使用28byte表示逻辑扇区号
-;端口号为 0x1f3~0x1f6
-;从低位与端口号对应
-;0x1f2 端口号 决定读多少扇区数 1~255 如果是0代表读256个扇区
-;扇区号 = 0000   0000 0000   0000 0000 0000 0000
-;       |0x1f6| | 0x1f5 |   | 0x1f4 | | 0x1f3  |
-;其中0x1f6位8位端口 低四位用来表示lba 27~24
-;高四位的 第4位0表示主硬盘，1表示从硬盘
-;第5，7位固定为1
-;第6位 0表示CHS模式，1表示LBA模式
-;0x1f7 为命令&状态端口 是一个8位的端口
-;0x20表示读
-;0x1f7的详细信息 https://blog.csdn.net/cosmoslife/article/details/9024659
-;0x1f0为数据端口
+      ;设置堆栈段和栈指针
+      mov ax,cs
+      mov ss,ax
+      mov sp,0x7c00
 
-read_hard_disk_0: ;从硬盘读取一个逻辑扇区
-    push ax       ;输入 DI:SI=起始逻辑扇区号
-    push bx       ;     DS:BX=目标缓冲区地址
-    push cx
-    push dx
 
-    mov dx,0x1f2 ;0x1f2端口号为决定读取扇区数的
-    mov al,1
-    out dx,al ;读取扇区数
+      ;计算GDT所在的逻辑段地址
+      mov ax,[cs:gdt_base+0x7c00]     ;低16位
+      mov dx,[cs:gdt_base+0x7c00+0x02];高16位
+      mov bx,16
+      div bx
+      mov ds,ax                       ;令DS指向该段以进行操作
+      mov bx,dx                       ;段内起始偏移地址
+      
+      ;创建0#描述符，它是空描述符，这是处理器的要求
+      mov dword [bx+0x00],0x00
+      mov dword [bx+0x04],0x00
 
-    inc dx    ;0x1f3端口
-    mov ax,si
-    out dx,al  ;LBA地址7~0
+      ;创建#1描述符，保护模式下的代码段描述符
+      mov dword [bx+0x08],0x7c0001ff
+      mov dword [bx+0x0c],0x00409800
 
-    inc dx      ;0x1f4端口:
-    mov al,ah   ;LBA地址 8~15
-    out dx,al
+      ;创建#2描述符，保护模式下的数据段描述符（文本模式下的显示缓冲区）
+      mov dword [bx+0x10],0x8000ffff
+      mov dword [bx+0x14],0x0040920b
 
-    inc dx      ;0x1f5端口
-    mov ax,di   ;LAB地址 16~23
-    out dx,al
+      ;创建#3描述符，保护模式下的堆栈段描述符
+      mov dword [bx+0x18],0x00007a00
+      mov dword [bx+0x1c],0x00409600
 
-    inc dx      ;0x1f6端口
-    mov al,0xe0 ;看上边注释
-    or al,ah
-    out dx,al
+      ;初始化描述符表寄存器GDTR
+      mov word [cs:gdt_size+0x7c00],31    ;描述符表的界限（总字节数减一）
+    
+      lgdt [cs:gdt_size+0x7c00]
 
-    inc dx      ;0x1f7端口,设置为读
-    mov al,0x20
-    out dx,al
+      in al,0x92                          ;南桥芯片内的端口
+      or al,0000_0010B
+      out 0x92,al                         ;打开A20
 
-.waits:
-    in al,dx    ;获取disk状态，直到硬盘准备就绪
-    and al,0x88
-    cmp al,0x88
-    jnz .waits
+      cli                                 ;保护模式下终端机制尚未建立，应
+                                          ;禁止中断
+      
 
-    mov cx,256 ;一个扇区256个字 512个字节,每次读两个字节，1个字
-    mov dx,0x1f0
+      mov eax,cr0
+      or eax,1
+      mov cr0,eax
 
-.readw:
-    in ax,dx  ;读完
-    mov [bx],ax
-    add bx,2
-    loop  .readw
+      ;以下进入保护模式
+      jmp dword 0x0008:flush              ;16位的描述符选择子：32位偏移
+                                          ;清流水线并串行化处理器
+      [bits 32]
 
-    pop dx
-    pop cx
-    pop bx
-    pop ax
 
-    ret
+  flush:
+      mov cx,00000000000_10_000B          ;加载数据段选择子（0x10)
+      mov ds,cx
 
-calc_segment_base:
-    push  dx
+      ;以下在屏幕上显示“Protect mode OK.”
+      mov byte [0x00],'P'
+      mov byte [0x02],'r'
+      mov byte [0x04],'o'
+      mov byte [0x06],'t'
+      mov byte [0x08],'e'
+      mov byte [0x0a],'c'
+      mov byte [0x0c],'t'
+      mov byte [0x0e],' '
+      mov byte [0x10],'m'
+      mov byte [0x12],'o'
+      mov byte [0x14],'d'
+      mov byte [0x16],'e'
+      mov byte [0x18],' '
+      mov byte [0x1a],'o'
+      mov byte [0x1c],'k'
 
-    add ax,[cs:phy_base]
-    add dx,[cs:phy_base+0x02]
-    shr ax,4
-    ror dx,4
-    and dx,0xf000
-    or ax,dx
+      ;以下用简单的示例来帮助阐述32位保护模式下的堆栈操作
+      mov cx,00000000000_11_000B          ;加载堆栈段选择子
+      mov ss,cx
+      mov esp,0x7c00
 
-    pop dx
+      mov ebp,esp                         ;保存堆栈指针
+      push byte '.'
 
-    ret
+      sub ebp,4
+      cmp ebp,esp
+      jnz ghalt
+      pop eax
+      mov [0x1e],al                       ;设置句点
 
-    phy_base dd 0x10000 ;用户程序被加载的物理起始地址
+ghalt:
+      hlt                                 ;已经禁止终端，将不会被唤醒
+      
+      gdt_size    dw 0
+      gdt_base    dw 0x00007e00       ;GDT的物理地址
 
-times 510-($-$$) db 0
-                 dw 0xaa55
+      times 510-($-$$)  db 0
+                        db 0x55,0xaa 
