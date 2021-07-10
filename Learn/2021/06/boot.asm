@@ -3,14 +3,14 @@
       core_base_address equ 0x00040000  ;常数，内核加载的起始内存地址
       core_start_sector equ 0x00000001  ;常数，内核的起始逻辑扇区号
 
-      mov eax,cs
+      mov eax,cs                        ;cs值为0
       mov ss,eax
-      mov sp,0x7c00
+      mov sp,0x7c00                     ;设置一个向下扩展的栈段
 
       ;计算GDT所在的逻辑段地址
-      mov eax,[cs:pgdt+0x7c00+0x02];高16位
-      xor edx,edx
-      mov ebx,16
+      mov eax,[cs:pgdt+0x7c00+0x02]     ;高16位
+      xor edx,edx                       ;被除数在edx eax 64位除法
+      mov ebx,16                        ;余数在edx中商在eax中
       div ebx
     
       ;intel 对 ds,eax进行了优化。无论是16位还是32位都不会出现反转前缀
@@ -64,7 +64,7 @@
   flush:
 
       mov eax,0x0008                      ;加载数据段
-      mov ds,eax
+      mov ds,eax                          ;0100;选择子#1选择子
 
       mov eax,0x0018      ;加载堆栈段选择子
       mov ss,eax
@@ -118,8 +118,23 @@ setup:
       mov [esi+0x34],edx
 
       ;建立核心代码段描述符
-      ;TODO c13_mbr 120
+      mov eax,[edi+0x0c]                ;核心代码段起始汇编地址
+      mov ebx,[edi+0x00]                ;程序总长度
+      sub ebx,eax
+      dec ebx                           ;核心代码段界限
+      add eax,edi                       ;核心代码段基地址
+      mov ecx,0x00409800
+      call make_gdt_descriptor
+      mov [esi+0x38],eax
+      mov [esi+0x3c],edx
+
+      mov word [0x7c00+pgdt],63
+
+      lgdt [0x7c00+pgdt]
+
+      jmp far [edi+0x10]
 ;------------------------------------------------------------------------
+
 read_hard_disk_0:
       ;从硬盘读取一个逻辑扇区
       ;eax=逻辑扇区号
@@ -177,16 +192,30 @@ read_hard_disk_0:
 
       ret
 
-      
+ 
+;------------------------------------------------------------
+make_gdt_descriptor:                    ;构造描述符
+                                        ;输入：EAX=线性基地址
+                                        ;      EBX=段界限
+                                        ;      ECX=属性
+      mov edx,eax
+      shl eax,16
+      or ax,bx
 
+      and edx,0xffff0000
+      rol edx,8
+      bswap edx
 
+      xor bx,bx
+      or edx,ebx
 
-      hlt                                 ;已经禁止终端，将不会被唤醒
+      or edx,ecx
 
-      string      db 's0ke4or92xap3fv8giuzjcy5l1m7hd6bnqtw.'
+      ret
       
       pgdt        dw 0
                   dd 0x00007e00       ;GDT的物理地址
 
       times 510-($-$$)  db 0
                         db 0x55,0xaa 
+;------------------------------------------------------------
