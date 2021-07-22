@@ -1,6 +1,6 @@
 %include "pm.inc" ;常量，宏
 
-org   0x100
+org   0x7c00
 jmp   LABEL_BEGIN
 
 [SECTION .gdt]
