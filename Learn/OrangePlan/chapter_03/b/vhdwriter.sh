@@ -1,2 +1,2 @@
-../../helper/vhdwriter_mac -w ./a.img -a 0 -r  product/boot.bin
-../../helper/vhdwriter_mac -w ../a.img -a 1 -r  product/core.bin
+../../helper/vhdwriter_mac -w ./boot.vhd -a 0 -r  boot.bin
+../../helper/vhdwriter_mac -w ./boot.vhd -a 1 -r  core.bin

@@ -5,27 +5,44 @@
          core_base_address equ 0x00040000   ;常数，内核加载的起始内存地址 
          core_start_sector equ 0x00000001   ;常数，内核的起始逻辑扇区号
 
+jmp LABEL_BEGIN
 ;GDT Begin                            段基址          段界限            属性
 LABEL_GDT:             Descriptor          0,              0,              0           ;空描述符 
-LABEL_DESC_DATA:       Descriptor         0,        0xFFFFF,         DA_DRW+DA_4K+DA_32     ;粒度为4K，存储器描述符
 LABEL_DESC_CODE:       Descriptor    0x7c00,         0x01FF,         DA_C+DA_32
+LABEL_DESC_DATA:       Descriptor    0x7c00,        0xFFFFF,         DA_DRW+DA_4K+DA_32     ;粒度为4K，存储器描述符
 LABEL_DESC_STACK:      Descriptor    0x7c00,        0xFFFFE,         DA_4K+DA_DRWB+DA_32   
 LABEL_DESC_VIDEO:      Descriptor   0xb8000,        0x07FFF,         DA_DRW+DA_32 
+LABEL_DESC_TEST:       Descriptor  0x300000,         0xffff,         DA_DRW
 ;GDT End
 GtdLen  equ $ - LABEL_GDT
 GdtPtr  dw GtdLen - 1
         dd 0
+;GDT 选择子
+SelectorCode                  equ                         LABEL_DESC_CODE   - LABEL_GDT 
+SelectorData                  equ                         LABEL_DESC_DATA   - LABEL_GDT                                                      
+SelectorStack                 equ                         LABEL_DESC_STACK  - LABEL_GDT                          
+SelectorVideo                 equ                         LABEL_DESC_VIDEO  - LABEL_GDT                    
+SelectorTest                  equ                         LABEL_DESC_TEST   - LABEL_GDT                      
+;
+LABEL_DATA:
+PMMessage:                    db      "In Protect Mode now. ^_^",0
+StrTest:                      db      "ABCDEFGHIJKLMNOPQRSTUVWXYZ",0
+OffsetStrTest                 equ     StrTest - $$
+DataLen                       equ     $ - LABEL_DATA
+LABEL_BEGIN:
 ;-------------------------------------------------------------------------------         
-         ;计算GDT所在的逻辑段地址
-         mov eax,cs      ;GDT的32位物理地址 
-         xor edx,edx
-         mov ebx,16
-         div ebx                            ;分解成16位逻辑地址 
-
-         mov ds,eax                         ;令DS指向该段以进行操作
-         mov ebx,edx                        ;段内起始偏移地址 
- 
-         mov [cs:GdtPtr+2],eax
+        ;保护模式下清屏幕
+         mov ah,0x06
+         mov al,0
+         mov cx,0
+         mov dx,0xffff
+         mov bh,0x07
+         int 0x10
+        ;设置GDT的基地址和界限 
+         xor eax,eax
+         mov ax,0x7c00
+         add eax,LABEL_GDT
+         mov [cs:GdtPtr+0x7c00+2],eax
          lgdt [cs: GdtPtr+0x7c00]
       
          in al,0x92                         ;南桥芯片内的端口 
@@ -39,88 +56,72 @@ GdtPtr  dw GtdLen - 1
          mov cr0,eax                        ;设置PE位
       
          ;以下进入保护模式... ...
-         jmp 0x0010:flush                   ;清流水线并串行化处理器
+         jmp SelectorCode:flush                   ;清流水线并串行化处理器
 
          [bits 32]               
   flush:                                  
-         mov eax,0x0008                     ;加载数据段(0..4GB)选择子
-         mov ds,eax
+        mov ax,SelectorData
+        mov ds,ax
+        mov ax,SelectorVideo
+        mov gs,ax
+        mov ax,SelectorTest
+        mov es,ax
+        ;下面显示一个字符串
+        mov ah,0Ch
+        xor esi, esi
+        xor edi, edi
+        mov esi, PMMessage
+        mov edi, 0
+    .1:
+       lodsb
+       test al, al
+       jz   .2
+       mov [gs:edi], ax
+       add edi, 2
+       jmp .1
+    .2:
+      call DispReturn
 
-         mov eax,0x0018                     ;加载堆栈段选择子 
-         mov ss,eax
-         xor esp,esp                        ;堆栈指针 <- 0 
+      call TestRead
+      call TestWrite
+      call TestRead
 
-         ;以下加载系统核心程序 
-         mov edi,core_base_address 
+      jmp $
       
-         mov eax,core_start_sector
-         mov ebx,edi                        ;起始地址 
-         call read_hard_disk_0              ;以下读取程序的起始部分（一个扇区） 
-      
-         ;以下判断整个程序有多大
-         mov eax,[edi]                      ;核心程序尺寸
-         xor edx,edx 
-         mov ecx,512                        ;512字节每扇区
-         div ecx
+;-------------------------------------------------------------------------------
+TestRead:
+      xor esi, esi
+      mov ecx, 8
 
-         or edx,edx
-         jnz @1                             ;未除尽，因此结果比实际扇区数少1 
-         dec eax                            ;已经读了一个扇区，扇区总数减1 
-   @1:
-         or eax,eax                         ;考虑实际长度≤512个字节的情况 
-         jz setup                           ;EAX=0 ?
+.loop:
+    mov al, [es:esi]
+    call DispAL
+    inc esi
+    loop .loop
+    
+    call DispReturn
+    ret
 
-         ;读取剩余的扇区
-         mov ecx,eax                        ;32位模式下的LOOP使用ECX
-         mov eax,core_start_sector
-         inc eax                            ;从下一个逻辑扇区接着读
-   @2:
-         call read_hard_disk_0
-         inc eax
-         loop @2                            ;循环读，直到读完整个内核 
+;-------------------------------------------------------------------------------
+TestWrite:
+    push esi
+    push edi
+    xor esi, esi
+    xor edi, edi
+    mov esi, OffsetStrTest
+    cld
 
- setup:
-         mov esi,[0x7c00+pgdt+0x02]         ;不可以在代码段内寻址pgdt，但可以
-                                            ;通过4GB的段来访问
-         ;建立公用例程段描述符
-         mov eax,[edi+0x04]                 ;公用例程代码段起始汇编地址
-         mov ebx,[edi+0x08]                 ;核心数据段汇编地址
-         sub ebx,eax
-         dec ebx                            ;公用例程段界限 
-         add eax,edi                        ;公用例程段基地址
-         mov ecx,0x00409800                 ;字节粒度的代码段描述符
-         call make_gdt_descriptor
-         mov [esi+0x28],eax
-         mov [esi+0x2c],edx
-       
-         ;建立核心数据段描述符
-         mov eax,[edi+0x08]                 ;核心数据段起始汇编地址
-         mov ebx,[edi+0x0c]                 ;核心代码段汇编地址 
-         sub ebx,eax
-         dec ebx                            ;核心数据段界限
-         add eax,edi                        ;核心数据段基地址
-         mov ecx,0x00409200                 ;字节粒度的数据段描述符 
-         call make_gdt_descriptor
-         mov [esi+0x30],eax
-         mov [esi+0x34],edx 
-      
-         ;建立核心代码段描述符
-         mov eax,[edi+0x0c]                 ;核心代码段起始汇编地址
-         mov ebx,[edi+0x00]                 ;程序总长度
-         sub ebx,eax
-         dec ebx                            ;核心代码段界限
-         add eax,edi                        ;核心代码段基地址
-         mov ecx,0x00409800                 ;字节粒度的代码段描述符
-         call make_gdt_descriptor
-         mov [esi+0x38],eax
-         mov [esi+0x3c],edx
-
-         mov word [0x7c00+pgdt],63          ;描述符表的界限
-                                        
-         lgdt [0x7c00+pgdt]                  
-
-         jmp far [edi+0x10]  
-       
+.1:
+    lodsb
+    test al,al
+    jz  .2
+    mov [es:edi], al
+    inc edi
+    jmp .1
+.2:
+    pop edi
+    pop esi
+    ret
 ;-------------------------------------------------------------------------------
 read_hard_disk_0:                        ;从硬盘读取一个逻辑扇区
                                          ;EAX=逻辑扇区号
@@ -178,6 +179,57 @@ read_hard_disk_0:                        ;从硬盘读取一个逻辑扇区
       
          ret
 
+;-------------------------------------------------------------------------------
+;显示AL中的数字
+;默认地：
+;  数字已经存在AL中
+;  edi 始终指向要显示的下一个字符的位置
+; 被改变的寄存器
+;     ax,edi
+DispAL:
+    push ecx
+    push edx
+
+    mov ah, 0Ch
+    mov dl, al
+    shr al,4
+    mov ecx, 2
+.begin:
+    and al, 01111b
+    cmp al, 9
+    jz  .1
+    add al, '0'
+    jmp .2
+.1:
+    sub al, 0Ah
+    add al, 'A'
+.2:
+    mov [gs:edi], ax
+    add edi, 2
+
+    mov al, dl
+    loop .begin
+    add edi, 2
+
+    pop edx
+    pop ecx
+    ret
+;-------------------------------------------------------------------------------
+DispReturn:
+    push eax
+    push ebx
+    mov eax, edi
+    mov bl, 160
+    div bl
+    and eax, 0FFh
+    inc eax
+    mov bl, 160
+    mul bl
+    mov edi, eax
+    pop ebx
+    pop eax
+
+    ret
 ;-------------------------------------------------------------------------------
 make_gdt_descriptor:                     ;构造描述符
                                          ;输入：EAX=线性基地址

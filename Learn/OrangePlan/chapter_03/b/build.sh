@@ -1,6 +1,8 @@
+file=boot
 echo "clean...."
-rm pmtest1.bin
-echo "build pmtest1.asm"
-nasm pmtest1.asm -o pmtest1.bin
+rm ${file}.bin
+echo "build ${file}.asm"
+nasm ${file}.asm -o ${file}.bin
+sh vhdwriter.sh
 echo "start bochs"
-bochs -f bochsrc
+bochs -f bochsrc_mac
