@@ -82,47 +82,26 @@ LABEL_BEGIN:
     .2:
       call DispReturn
 
-      call TestRead
-      call TestWrite
-      call TestRead
+      mov eax,0x01
+      mov ebx,0x1200
+      call read_hard_disk_0
+      mov ah,0Ch      
+      xor esi,esi
+      mov esi, 0x1200 
+      xor edi, edi
+      mov edi, 0
+    .3:
+       lodsb
+       test al, al
+       jz   .4
+       mov [gs:edi], ax
+       add edi, 2
+       jmp .3
+    .4:
+      call DispReturn
 
       jmp $
       
-;-------------------------------------------------------------------------------
-TestRead:
-      xor esi, esi
-      mov ecx, 8
-
-.loop:
-    mov al, [es:esi]
-    call DispAL
-    inc esi
-    loop .loop
-    
-    call DispReturn
-    ret
-
-;-------------------------------------------------------------------------------
-TestWrite:
-    push esi
-    push edi
-    xor esi, esi
-    xor edi, edi
-    mov esi, OffsetStrTest
-    cld
-
-.1:
-    lodsb
-    test al,al
-    jz  .2
-    mov [es:edi], al
-    inc edi
-    jmp .1
-.2:
-    pop edi
-    pop esi
-    ret
-;-------------------------------------------------------------------------------
 read_hard_disk_0:                        ;从硬盘读取一个逻辑扇区
                                          ;EAX=逻辑扇区号
                                          ;DS:EBX=目标缓冲区地址
